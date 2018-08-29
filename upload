@@ -3,10 +3,11 @@ set -eu
 set -o pipefail
 
 dest="s3://fs.opentoken.com/scrape/"
+mkdir -p uploading
 
 while true;
 do
-  path=$(find uploading/ -depth 1 -type f -name '*.json.zst' -print -quit)
+  path=$(find uploading/ -maxdepth 1 -type f -name '*.json.zst' -print -quit)
   if [ -z "${path// }" ]; then
     echo 'nothing to upload'
     sleep $(python -c "print(10 + $RANDOM/32000.)")

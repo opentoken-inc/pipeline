@@ -2,11 +2,11 @@
 set -eu
 set -o pipefail
 
-mkdir -p uploading
+mkdir -p uploading compressing
 
 while true;
 do
-  path=$(find compressing/ -depth 1 -type f -name '*.json' -print -quit)
+  path=$(find compressing/ -maxdepth 1 -type f -name '*.json' -print -quit)
   if [ -z "${path// }" ]; then
     echo 'nothing to compress'
     sleep $(python -c "print(10 + $RANDOM/32000.)")
