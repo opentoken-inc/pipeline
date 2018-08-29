@@ -1,0 +1,12 @@
+*.swp
+*.pyc
+venv*
+.DS_Store
+client/dist
+.*~
+.*
+google_client.json
+*.log
+working/
+compressing/
+uploading/
