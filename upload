@@ -1,0 +1,18 @@
+#!/bin/bash
+set -eu
+set -o pipefail
+
+dest="s3://fs.opentoken.com/scrape/"
+
+while true;
+do
+  path=$(find uploading/ -depth 1 -type f -name '*.json.zst' -print -quit)
+  if [ -z "${path// }" ]; then
+    echo 'nothing to upload'
+    sleep $(python -c "print(10 + $RANDOM/32000.)")
+    continue
+  fi
+  echo uploading "$path" to "$dest"
+  aws s3 mv "$path" s3://fs.opentoken.com/scrape/
+  echo uploaded "$dest/$(basename "$path")"
+done

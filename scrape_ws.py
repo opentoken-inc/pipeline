@@ -5,6 +5,8 @@ import time
 import ujson as json
 import _thread as thread
 import logging
+import inspect
+from hashlib import sha1
 from uuid import getnode
 from datetime import datetime, timedelta
 from itertools import chain
@@ -14,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 _MAC_HEX = hex(getnode())[2:]
 _MAX_OUTPUT_SIZE = 10000000
-_MAX_OUTPUT_DURATION = timedelta(seconds=60)
+_MAX_OUTPUT_DURATION = timedelta(seconds=180)
 
 
 def mkdirs_exists_ok(path):
@@ -25,6 +27,17 @@ def mkdirs_exists_ok(path):
       raise
 
 
+class CrashOnlyWebSocketApp(websocket.WebSocketApp):
+  """WebSocketApp that does not catch exceptions from callbacks."""
+
+  def _callback(self, callback, *args):
+    if callback:
+      if inspect.ismethod(callback):
+        callback(*args)
+      else:
+        callback(self, *args)
+
+
 class StreamConfig:
 
   def __init__(self, source, url):
@@ -33,7 +46,7 @@ class StreamConfig:
     self.source = source
     self.url = url
     websocket.enableTrace(False)
-    self.ws = websocket.WebSocketApp(
+    self.ws = CrashOnlyWebSocketApp(
         self.url,
         on_message=self.on_message,
         on_error=self.on_error,
@@ -41,6 +54,7 @@ class StreamConfig:
     self.ws.on_open = self.on_open
 
     self.last_opened_time = None
+    self.hasher = None
     self.f = None
 
     mkdirs_exists_ok(self.working_dir)
@@ -57,11 +71,14 @@ class StreamConfig:
     raise error
 
   def on_message(self, message):
-    self.f.write(message + '\n')
+    new_data = (message + '\n').encode()
+    self.hasher.update(new_data)
+    self.f.write(new_data)
     self._maybe_roll_logfile()
 
   def on_close(self):
     logger.error('websocket connection closed')
+    self._close_logfile()
 
   def _maybe_roll_logfile(self):
     bytes_written = self.f.tell()
@@ -70,22 +87,26 @@ class StreamConfig:
         now > self.last_opened_time + _MAX_OUTPUT_DURATION):
       self._roll_logfile()
 
-  def _roll_logfile(self):
+  def _close_logfile(self):
     if self.f:
-      f = self.f
+      old_path = self.f.name
+      new_path = '{}_{}.json'.format(
+          os.path.join(self.output_dir, os.path.basename(self.f.name)),
+          self.hasher.digest()[:8].hex())
+      self.f.close()
       self.f = None
-      old_path = f.name
-      new_path = os.path.join(self.output_dir, os.path.basename(f.name))
-      f.close()
+      self.hasher = None
       os.rename(old_path, new_path)
 
+  def _roll_logfile(self):
+    self._close_logfile()
+
     now = datetime.utcnow()
-    nonce = os.urandom(2).hex()
-    path = '{}/{}_{}_{}_{}.json'.format(self.working_dir, self.source,
-                                        now.strftime('%Y_%m_%d_%H_%M_%S'),
-                                        _MAC_HEX, nonce)
+    path = '{}/ws_{}_{}_{}'.format(self.working_dir, self.source,
+                                   now.strftime('%Y_%m_%d_%H_%M_%S'), _MAC_HEX)
     self.last_opened_time = now
-    self.f = open(path, 'w')
+    self.hasher = sha1()
+    self.f = open(path, 'wb')
     logger.info('rolled logfile to {}'.format(path))
 
 

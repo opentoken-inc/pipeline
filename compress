@@ -1,0 +1,19 @@
+#!/bin/bash
+set -eu
+set -o pipefail
+
+mkdir -p uploading
+
+while true;
+do
+  path=$(find compressing/ -depth 1 -type f -name '*.json' -print -quit)
+  if [ -z "${path// }" ]; then
+    echo 'nothing to compress'
+    sleep $(python -c "print(10 + $RANDOM/32000.)")
+    continue
+  fi
+  zstd -10 --rm "$path"
+  mv "${path}.zst" uploading/
+  dest="uploading/$(basename "$path").zst"
+  echo "done with $dest"
+done
