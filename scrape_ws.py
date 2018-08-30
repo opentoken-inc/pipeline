@@ -1,22 +1,15 @@
 import sys
 import os
 import websocket
-import time
 import ujson as json
-import _thread as thread
 import logging
 import inspect
-from hashlib import sha1
-from uuid import getnode
-from datetime import datetime, timedelta
 from itertools import chain
+
+from data_logger import DataLogger
 
 logger = logging.getLogger('scrape_ws')
 logging.basicConfig(level=logging.DEBUG)
-
-_MAC_HEX = hex(getnode())[2:]
-_MAX_OUTPUT_SIZE = 10000000
-_MAX_OUTPUT_DURATION = timedelta(seconds=180)
 
 
 def mkdirs_exists_ok(path):
@@ -38,12 +31,10 @@ class CrashOnlyWebSocketApp(websocket.WebSocketApp):
         callback(self, *args)
 
 
-class StreamConfig:
+class StreamConfig(DataLogger):
 
   def __init__(self, source, url):
-    self.working_dir = 'working'
-    self.output_dir = 'compressing'
-    self.source = source
+    super().__init__('ws_{}'.format(source))
     self.url = url
     websocket.enableTrace(False)
     self.ws = CrashOnlyWebSocketApp(
@@ -52,14 +43,6 @@ class StreamConfig:
         on_error=self.on_error,
         on_close=self.on_close)
     self.ws.on_open = self.on_open
-
-    self.last_opened_time = None
-    self.hasher = None
-    self.f = None
-
-    mkdirs_exists_ok(self.working_dir)
-    mkdirs_exists_ok(self.output_dir)
-    self._roll_logfile()
 
   def start(self):
     self.ws.run_forever(ping_timeout=1000)
@@ -71,43 +54,11 @@ class StreamConfig:
     raise error
 
   def on_message(self, message):
-    new_data = (message + '\n').encode()
-    self.hasher.update(new_data)
-    self.f.write(new_data)
-    self._maybe_roll_logfile()
+    self._log_line(message)
 
   def on_close(self):
     logger.error('websocket connection closed')
     self._close_logfile()
-
-  def _maybe_roll_logfile(self):
-    bytes_written = self.f.tell()
-    now = datetime.utcnow()
-    if (bytes_written > _MAX_OUTPUT_SIZE or
-        now > self.last_opened_time + _MAX_OUTPUT_DURATION):
-      self._roll_logfile()
-
-  def _close_logfile(self):
-    if self.f:
-      old_path = self.f.name
-      new_path = '{}_{}.json'.format(
-          os.path.join(self.output_dir, os.path.basename(self.f.name)),
-          self.hasher.digest()[:8].hex())
-      self.f.close()
-      self.f = None
-      self.hasher = None
-      os.rename(old_path, new_path)
-
-  def _roll_logfile(self):
-    self._close_logfile()
-
-    now = datetime.utcnow()
-    path = '{}/ws_{}_{}_{}'.format(self.working_dir, self.source,
-                                   now.strftime('%Y_%m_%d_%H_%M_%S'), _MAC_HEX)
-    self.last_opened_time = now
-    self.hasher = sha1()
-    self.f = open(path, 'wb')
-    logger.info('rolled logfile to {}'.format(path))
 
 
 class BinanceStreamConfig(StreamConfig):
@@ -124,9 +75,8 @@ class BinanceStreamConfig(StreamConfig):
                                    '{}@depth'.format(market))
                                   for market in markets)
 
-    super()('binance',
-            'wss://stream.binance.com:9443/ws/stream?streams={}'.format(
-                '/'.join(streams)))
+    super().__init__('binance', 'wss://stream.binance.com:9443/ws/{}'.format(
+        '/'.join(streams)))
 
 
 class CoinbaseStreamConfig(StreamConfig):
