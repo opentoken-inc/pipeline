@@ -4,12 +4,13 @@ import websocket
 import ujson as json
 import logging
 import inspect
+import requests
 from itertools import chain
 
 from data_logger import DataLogger
 
 logger = logging.getLogger('scrape_ws')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 def mkdirs_exists_ok(path):
@@ -95,7 +96,32 @@ class CoinbaseStreamConfig(StreamConfig):
         ],
         'channels': ['heartbeat', 'level2', 'full']
     }
+    for product_id in subscribe_msg['product_ids']:
+      result = requests.get('https://api.pro.coinbase.com/products/{}/book?level=3'.format(product_id))
+      result.raise_for_status()
+      book_json = result.json()
+      book_json['product_id'] = product_id
+      self._log_line(json.dumps(result.json()))
+
     self.ws.send(json.dumps(subscribe_msg))
+
+
+class BittrexStreamConfig(StreamConfig):
+
+  def __init__(self):
+    markets = (
+        'btcusdt',
+        'ethusdt',
+        'ltcusdt',
+        'ethbtc',
+        'trxusdt',
+    )
+    streams = chain.from_iterable(('{}@trade'.format(market),
+                                   '{}@depth'.format(market))
+                                  for market in markets)
+
+    super().__init__('binance', 'wss://stream.binance.com:9443/ws/{}'.format(
+        '/'.join(streams)))
 
 
 def get_config_from_source(source):
