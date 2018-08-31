@@ -120,8 +120,11 @@ class BittrexStreamConfig(DataLogger):
   def _maybe_redo_queries(self):
     lq = self.last_query_time
     now = time.time()
+    if not (lq is None or now > lq + _QUERY_PERIOD):
+      return
+
+    logger.info('querying order books')
     self.last_query_time = now
-    if lq is None or now > lq + _QUERY_PERIOD:
-      for invocation_args in self.invocations_args:
-        invocation_id = self.hub.server.invoke(*invocation_args)
-        self.invocation_ids[str(invocation_id)] = invocation_args
+    for invocation_args in self.invocations_args:
+      invocation_id = self.hub.server.invoke(*invocation_args)
+      self.invocation_ids[str(invocation_id)] = invocation_args
