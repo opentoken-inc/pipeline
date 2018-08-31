@@ -12,7 +12,7 @@ do
     sleep $(python -c "print(10 + $RANDOM/32000.)")
     continue
   fi
-  zstd -10 --rm "$path"
+  zstd -f -10 --rm "$path"
   mv "${path}.zst" uploading/
   dest="uploading/$(basename "$path").zst"
   echo "done with $dest"
