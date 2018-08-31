@@ -1,0 +1,31 @@
+#!/bin/bash
+set -eu
+set -o pipefail
+
+mkdir -p working
+
+hashcmd=$(which shasum 2>/dev/null || which sha1sum)
+
+while true;
+do
+  path=$(find working/ -maxdepth 1 -type f -print -quit)
+  if [ -z "${path// }" ]; then
+    echo 'nothing left to recover, quitting'
+    exit 0
+  fi
+
+  # Make sure the file is not open.
+  echo checking if any process has opened "$path"
+  if lsof -nO $(realpath ./bittrex_scraper.py); then
+    echo 'file is open, waiting'
+    sleep 1.
+    continue
+  else
+    # Rename adding hash.
+    hash_hex=$($hashcmd "$path" | head -c 16)
+    dest=compressing/"$(basename "$path"_"$hash_hex".json)"
+    mv "$path" "$dest"
+    echo recovered "$dest"
+  fi
+done
+
