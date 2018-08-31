@@ -55,7 +55,7 @@ class StreamConfig(DataLogger):
     raise error
 
   def on_message(self, message):
-    self._log_line(message)
+    self.log_line(message)
 
   def on_close(self):
     logger.error('websocket connection closed')
@@ -101,27 +101,9 @@ class CoinbaseStreamConfig(StreamConfig):
       result.raise_for_status()
       book_json = result.json()
       book_json['product_id'] = product_id
-      self._log_line(json.dumps(result.json()))
+      self.log_line(json.dumps(result.json()))
 
     self.ws.send(json.dumps(subscribe_msg))
-
-
-class BittrexStreamConfig(StreamConfig):
-
-  def __init__(self):
-    markets = (
-        'btcusdt',
-        'ethusdt',
-        'ltcusdt',
-        'ethbtc',
-        'trxusdt',
-    )
-    streams = chain.from_iterable(('{}@trade'.format(market),
-                                   '{}@depth'.format(market))
-                                  for market in markets)
-
-    super().__init__('binance', 'wss://stream.binance.com:9443/ws/{}'.format(
-        '/'.join(streams)))
 
 
 def get_config_from_source(source):
@@ -129,6 +111,9 @@ def get_config_from_source(source):
     return BinanceStreamConfig()
   elif source == 'coinbase':
     return CoinbaseStreamConfig()
+  elif source == 'bittrex':
+    from bittrex_scraper import BittrexStreamConfig
+    return BittrexStreamConfig()
   else:
     raise NotImplementedError(source)
 

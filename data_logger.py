@@ -35,9 +35,8 @@ class DataLogger:
 
     mkdirs_exists_ok(self.working_dir)
     mkdirs_exists_ok(self.output_dir)
-    self._roll_logfile()
 
-  def _log_line(self, line):
+  def log_line(self, line):
     self._maybe_roll_logfile()
     new_data = (line + '\n').encode()
     self.hasher.update(new_data)

@@ -24,11 +24,19 @@ class CoinbaseRestConfig(DataLogger):
     super().__init__('coinbase')
 
 
+class BittrexRestConfig(DataLogger):
+
+  def __init__(self):
+    super().__init__('bittrex')
+
+
 def get_config_from_source(source):
   if source == 'binance':
     return BinanceRestConfig()
   elif source == 'coinbase':
     return CoinbaseRestConfig()
+  elif source == 'bittrex':
+    return BittrexRestConfig()
   else:
     raise NotImplementedError(source)
 
