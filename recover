@@ -16,7 +16,7 @@ do
 
   # Make sure the file is not open.
   echo checking if any process has opened "$path"
-  if lsof -nO $(realpath ./bittrex_scraper.py); then
+  if lsof $(realpath "$path"); then
     echo 'file is open, waiting'
     sleep 1.
     continue
