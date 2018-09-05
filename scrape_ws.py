@@ -1,11 +1,12 @@
 import sys
 import os
 import websocket
-import ujson as json
 import logging
 import inspect
 import requests
 import time
+from gzip import decompress as gzip_decompress
+from json import dumps
 from itertools import chain
 
 from data_logger import DataLogger
@@ -56,7 +57,7 @@ class StreamConfig(DataLogger):
     raise error
 
   def on_message(self, message):
-    self.log_line(message)
+    self.log_json(message)
 
   def on_close(self):
     logger.error('websocket connection closed')
@@ -83,7 +84,7 @@ class BinanceStreamConfig(StreamConfig):
     super().__init__(
         'binance',
         'wss://stream.binance.com:9443/ws/{}'.format('/'.join(streams)),
-        max_output_size_bytes=15000000,
+        max_output_size_bytes=13000000,
         max_file_duration_seconds=10 * 60)
 
 
@@ -93,7 +94,7 @@ class BinanceStreamConfig(StreamConfig):
     self._maybe_redo_queries()
 
   def on_message(self, message):
-    self.log_line(message)
+    self.log_json(message)
     self._maybe_redo_queries()
 
   def _maybe_redo_queries(self):
@@ -113,7 +114,7 @@ class BinanceStreamConfig(StreamConfig):
       assert 's' not in book_json
       book_json['e'] = 'depth'
       book_json['s'] = market
-      self.log_line(json.dumps(book_json))
+      self.log_json(book_json)
       time.sleep(1.)
 
 
@@ -138,9 +139,57 @@ class CoinbaseStreamConfig(StreamConfig):
       result.raise_for_status()
       book_json = result.json()
       book_json['product_id'] = product_id
-      self.log_line(json.dumps(book_json))
+      self.log_json(book_json)
 
-    self.ws.send(json.dumps(subscribe_msg))
+    self.ws.send(dumps(subscribe_msg))
+
+
+class BitmexStreamConfig(StreamConfig):
+
+  def __init__(self):
+    super().__init__('bitmex', 'wss://www.bitmex.com/realtime')
+
+  def on_open(self):
+    markets = ('XBTUSD',)
+    subscriptions = ['subscribe:{}'.format(market) for market in markets]
+    for subscription in subscription:
+      raise NotImplementedError()
+
+
+class HuobiStreamConfig(StreamConfig):
+
+  def __init__(self):
+    super().__init__(
+        'huobi', 'wss://api.huobi.pro/ws',
+        max_file_duration_seconds=200)
+    self.last_pong_time = time.time()
+
+  def on_message(self, message):
+    result = gzip_decompress(message)
+    self.log_json(result)
+    self._maybe_pong()
+
+  def on_open(self):
+    markets = ('btcusdt', 'ethusdt', 'ethbtc', 'eosusdt', 'bchusdt', 'xrpusdt',
+               'etcusdt')
+    subs_fmts = (
+        'market.{}.detail',
+        'market.{}.kline.1day',
+        'market.{}.depth.percent10',
+        'market.{}.trade.detail',
+        'market.{}.depth.step0',
+    )
+
+    subs = ['market.overview'] + [sf.format(market) for market in markets for sf in subs_fmts]
+
+    for sub in subs:
+      self.ws.send(dumps({'sub': sub}))
+
+  def _maybe_pong(self):
+    now = time.time()
+    if now - self.last_pong_time > 4.8:
+      self.ws.send(dumps({'pong': 1000*int(now)}))
+      self.last_pong_time = now
 
 
 def get_config_from_source(source):
@@ -148,6 +197,10 @@ def get_config_from_source(source):
     return BinanceStreamConfig()
   elif source == 'coinbase':
     return CoinbaseStreamConfig()
+  elif source == 'huobi':
+    return HuobiStreamConfig()
+  elif source == 'bitmex':
+    return BitmexStreamConfig()
   elif source == 'bittrex':
     from bittrex_scraper import BittrexStreamConfig
     return BittrexStreamConfig()

@@ -1,5 +1,7 @@
 import os
 import logging
+from time import time
+from json import dumps, loads
 from hashlib import sha1
 from uuid import getnode
 from datetime import datetime, timedelta
@@ -42,6 +44,15 @@ class DataLogger:
     self.hasher.update(new_data)
     self.f.write(new_data)
     self._maybe_roll_logfile()
+
+  def log_json(self, obj):
+    if isinstance(obj, (str, bytes)):
+      obj = loads(obj)
+    if isinstance(obj, list):
+      obj = {'dList': obj}
+
+    obj['logTime'] = str(time())
+    self.log_line(dumps(obj, separators=(',', ':')))
 
   def _maybe_roll_logfile(self):
     if not self.f:

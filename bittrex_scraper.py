@@ -106,10 +106,7 @@ class BittrexStreamConfig(DataLogger):
     if 'R' in msg and isinstance(msg['R'], str):
       msg['R'] = decompress_arg(msg['R'])
 
-    msg['logTime'] = now
-    data_to_log = dumps(msg, separators=(',', ':'))
-    self.log_line(data_to_log)
-
+    self.log_json(msg)
     self._maybe_redo_queries()
 
 
