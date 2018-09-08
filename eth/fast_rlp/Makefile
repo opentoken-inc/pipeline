@@ -1,6 +1,5 @@
 CXX=clang++
 CXX_FLAGS=-g --std=c++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -O3
-LDFLAGS=-lleveldb
 
 # Final binary
 BIN = main

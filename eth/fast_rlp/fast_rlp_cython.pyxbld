@@ -1,0 +1,12 @@
+import os
+from distutils.extension import Extension
+
+
+def make_ext(modname, pyxfilename):
+  cxxflags = '-g -march=native --std=c++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -O3'.split(' ')
+  return Extension(
+    name=modname,
+    sources=[pyxfilename],
+    language='c++',
+    include_dirs=[os.path.dirname(__file__)],
+    extra_compile_args=cxxflags)
