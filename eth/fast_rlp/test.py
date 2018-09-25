@@ -41,7 +41,7 @@ def run_tests():
   except ValueError:
     pass
 
-# run_tests()
+run_tests()
 
 # Performance
 def run(stmt, setup_code, N=100000):
@@ -76,7 +76,7 @@ assert rlp_decode(header) == rlp_decode_raw(header)
 
   print('{}x speedup'.format(rateB / rateA))
 
-# profile_raw()
+profile_raw()
 
 
 def profile_typed():
