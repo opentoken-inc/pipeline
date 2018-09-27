@@ -10,8 +10,8 @@ std::string bin_to_hex(const uint8_t (&s)[N]) {
   constexpr auto hex = "0123456789ABCDEF";
   std::string result(2 * N, '\x00');
   for (size_t i = 0; i < N; ++i) {
-    result[2 * i + 0] = hex[s[i] & 0x0F];
-    result[2 * i + 1] = hex[s[i] >> 4];
+    result[2 * i + 0] = hex[s[i] >> 4];
+    result[2 * i + 1] = hex[s[i] & 0x0F];
   }
   return result;
 }

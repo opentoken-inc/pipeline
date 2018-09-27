@@ -1,6 +1,6 @@
 CXX=clang++
 INCLUDES=-I/usr/local/opt/openssl@1.1/include/
-CXX_FLAGS=-g --std=c++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-format-security -O0 $(INCLUDES)
+CXX_FLAGS=-g --std=gnu++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-format-security -Wno-c99-extensions -O3 $(INCLUDES)
 LDFLAGS=-L/usr/local/opt/openssl@1.1/lib/ -lcrypto
 
 # Final binary
