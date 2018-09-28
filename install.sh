@@ -8,8 +8,8 @@ if [ "$(uname)" == "Darwin" ]; then
   rustup default stable
   cargo install --features=ssl websocat
 else
-  sudo yum install -y zstd tmux git python3 python3-devel
-  sudo yum groupinstall "Development Tools"
-  sudo amazon-linux-extras install rust1
+  sudo yum install -y zstd tmux git python3 python3-devel openssl-devel
+  sudo yum groupinstall -y "Development Tools"
+  sudo amazon-linux-extras install -y rust1
   cargo install --features=ssl websocat
 fi
