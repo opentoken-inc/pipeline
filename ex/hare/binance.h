@@ -73,9 +73,9 @@ std::optional<BinanceTrade> json_to_binance_trade(const gason::JsonValue& obj) {
   return {result};
 }
 
-class BinanceReader {
+class BinanceFileReader {
  public:
-  BinanceReader() = default;
+  BinanceFileReader() = default;
 
   int fd() const { return ::fileno(fp_); }
   bool has_next() const { return !done_; }
@@ -94,7 +94,7 @@ class BinanceReader {
     return parsed;
   }
 
-  ~BinanceReader() {
+  ~BinanceFileReader() {
     if (line_) {
       std::free(line_);
       line_ = nullptr;
@@ -102,8 +102,8 @@ class BinanceReader {
   }
 
  private:
-  BinanceReader(BinanceReader&) = delete;
-  BinanceReader(BinanceReader&&) = delete;
+  BinanceFileReader(BinanceFileReader&) = delete;
+  BinanceFileReader(BinanceFileReader&&) = delete;
 
   FILE* const fp_ = stdin;
   char* line_ = nullptr;

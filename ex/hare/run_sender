@@ -1,3 +1,4 @@
 #!/bin/bash
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-websocat -UE wss://stream.binance.com:9443/ws/btcusdt@trade/ethusdt@trade | "$THIS_DIR"/main $RECEIVER_ADDR
+websocat -UE wss://stream.binance.com:9443/ws/btcusdt@trade/ethusdt@trade | \
+  "$THIS_DIR"/sender $RECEIVER_ADDR

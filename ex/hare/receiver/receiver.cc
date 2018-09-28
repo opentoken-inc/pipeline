@@ -44,7 +44,7 @@ void write_json_to_file(FILE* fp, const BinanceTrade& trade,
 void process_stdin(const char* output_path, int recv_port) {
   using namespace std;
   Hasher hasher{getenv("SECRET_MESSAGE_KEY")};
-  BinanceReader reader;
+  BinanceFileReader reader;
   File output_file{output_path, "w"};
 
   UDPMessage in_message{};
