@@ -1,4 +1,4 @@
-CXX=clang++
+CXX=g++
 INCLUDES=-I/usr/local/opt/openssl/include/ -I./ -I../
 CXX_FLAGS=-g --std=gnu++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-format-security -Wno-c99-extensions -O3 $(INCLUDES)
 LDFLAGS=-L/usr/local/opt/openssl/lib/ -lcrypto

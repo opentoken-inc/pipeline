@@ -2,6 +2,7 @@
 #define _OPENTOKEN__HARE__CHECK_H_
 
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 
@@ -16,7 +17,8 @@
 #define CHECK(...) CHECK_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_OK(...) CHECK_OK_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_EQ(...) CHECK_EQ_impl(__FILE__, __LINE__, __VA_ARGS__)
-#define CHECK_ALL(...) CHECK_ALL_impl(__FILE__, __LINE__, __VA_ARGS__)  // not implemented
+#define CHECK_ALL(...) \
+  CHECK_ALL_impl(__FILE__, __LINE__, __VA_ARGS__)  // not implemented
 #define FAIL(...) FAIL_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define NOTNULL(...) NOTNULL_impl(__FILE__, __LINE__, __VA_ARGS__)
 
@@ -33,7 +35,7 @@ std::string string_format(const std::string& format, Args... args) {
 }  // namespace
 
 static inline bool str_eq(const char* a, const char* b) {
-  return strcmp(a, b) == 0;
+  return std::strcmp(a, b) == 0;
 }
 
 template <typename... Args>

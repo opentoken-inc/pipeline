@@ -38,7 +38,7 @@ void process_stdin(const char* destination_address_str) {
   UDPSocket socket{};
 
   const int timeout = -1;
-  struct pollfd fds[] = {{
+  pollfd fds[] = {{
       .fd = reader.fd(),
       .events = POLLIN,
   }};

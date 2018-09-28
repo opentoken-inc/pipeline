@@ -25,7 +25,6 @@ sockaddr_in string_to_sockaddr(string addr_str) {
   CHECK(colon_pos != std::string::npos);
 
   sockaddr_in result{
-      .sin_len = sizeof(sockaddr_in),
       .sin_family = AF_INET,
       .sin_port = htons(
           static_cast<in_port_t>(std::stoi(addr_str.substr(colon_pos + 1)))),

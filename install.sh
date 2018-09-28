@@ -6,7 +6,7 @@ if [ "$(uname)" == "Darwin" ]; then
   brew install getsentry/tools/sentry-cli || brew upgrade getsentry/tools/sentry-cli
   rustup install stable
   rustup default stable
-  cargo install --features=ssl websocat
+  cargo install --features=ssl websocat || echo websocat already installed
 else
   sudo yum install -y zstd tmux git python3 python3-devel openssl-devel
   sudo yum groupinstall -y "Development Tools"

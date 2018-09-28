@@ -29,4 +29,4 @@ scp "$pkg_path" "$target_server:~"
 echo "unpacking on server"
 ssh "$target_server" "tar -xzf $pkg_file && rm $pkg_file"
 
-#rm -rf "$temp"
+rm -rf "$temp"
