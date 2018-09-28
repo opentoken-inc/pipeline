@@ -37,6 +37,8 @@ void process_stdin(const char* destination_address_str) {
   out_message.SetAddrFromString(destination_address_str);
   UDPSocket socket{};
 
+  std::cout << "Sending to " << out_message.addr_str() << "\n";
+
   const int timeout = -1;
   pollfd fds[] = {{
       .fd = reader.fd(),
