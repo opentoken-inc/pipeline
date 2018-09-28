@@ -1,0 +1,2 @@
+#!/bin/sh
+websocat wss://stream.binance.com:9443/ws/btcusdt@trade/ethusdt@trade | ./main

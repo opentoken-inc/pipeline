@@ -1,0 +1,3 @@
+#!/bin/bash
+websocat wss://stream.binance.com:9443/ws/btcusdt@trade/ethusdt@trade | \
+  ./receiver/receiver >(python ../../data_logger.py hare_binance 10000000 300)

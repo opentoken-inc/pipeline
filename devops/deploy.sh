@@ -2,6 +2,9 @@
 set -eu
 set -o pipefail
 
+target_server="$1"
+echo deploying to "$target_server"
+
 revision=$(git describe --match=NeVeRmAtCh --always --abbrev=10 --dirty)
 if [[ $revision = *"dirty"* ]]; then
   echo "Git workspace is dirty, commit before deploying"
@@ -22,8 +25,8 @@ rm -rf "$pipeline_dir"/.git
 echo "creating tarball"
 tar -C "$temp" -czf "$pkg_path" "$pkg_name"
 echo "copying to server"
-scp "$pkg_path" 'scraper:~'
+scp "$pkg_path" "$target_server:~"
 echo "unpacking on server"
-ssh scraper "tar -xzf $pkg_file && rm $pkg_file"
+ssh "$target_server" "tar -xzf $pkg_file && rm $pkg_file"
 
 #rm -rf "$temp"

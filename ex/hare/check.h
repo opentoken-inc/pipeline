@@ -1,10 +1,9 @@
-#ifndef _OPENTOKEN__HARE__CRASH_H_
-#define _OPENTOKEN__HARE__CRASH_H_
+#ifndef _OPENTOKEN__HARE__CHECK_H_
+#define _OPENTOKEN__HARE__CHECK_H_
 
 #include <cstdlib>
 #include <memory>
 #include <string>
-
 
 #ifdef DEBUG
 #define dprintf(...) printf(__VA_ARGS__)
@@ -16,7 +15,10 @@
 
 #define CHECK(...) CHECK_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_OK(...) CHECK_OK_impl(__FILE__, __LINE__, __VA_ARGS__)
+#define CHECK_EQ(...) CHECK_EQ_impl(__FILE__, __LINE__, __VA_ARGS__)
+#define CHECK_ALL(...) CHECK_ALL_impl(__FILE__, __LINE__, __VA_ARGS__)  // not implemented
 #define FAIL(...) FAIL_impl(__FILE__, __LINE__, __VA_ARGS__)
+#define NOTNULL(...) NOTNULL_impl(__FILE__, __LINE__, __VA_ARGS__)
 
 namespace {
 
@@ -30,6 +32,10 @@ std::string string_format(const std::string& format, Args... args) {
 
 }  // namespace
 
+static inline bool str_eq(const char* a, const char* b) {
+  return strcmp(a, b) == 0;
+}
+
 template <typename... Args>
 __attribute__((__format__(__printf__, 4, 0)))  //
 static inline void
@@ -40,6 +46,14 @@ CHECK_impl(const char* filename, int line, bool condition, const char* format,
             filename, line, args...);
     exit(1);
   }
+}
+
+template <typename... Args>
+__attribute__((__format__(__printf__, 4, 0)))  //
+static inline void
+CHECK_impl(const char* filename, int line, bool condition, const char* format,
+           const std::string s, Args... args) {
+  CHECK_impl(filename, line, condition, format, s.c_str(), args...);
 }
 
 template <typename... Args>
@@ -58,6 +72,12 @@ static inline void CHECK_impl(const char* filename, int line, bool condition) {
   CHECK_impl(filename, line, condition, "<no message>");
 }
 
+template <typename LHS, typename RHS>
+static inline void CHECK_EQ_impl(const char* filename, int line, LHS&& lhs,
+                                 RHS&& rhs) {
+  return CHECK_impl(filename, line, lhs == rhs, "%s != %s", lhs, rhs);
+}
+
 template <typename... Args>
 [[noreturn]] __attribute__((__format__(__printf__, 3, 0)))  //
 static inline void
@@ -66,4 +86,10 @@ FAIL_impl(const char* filename, int line, const char* format, Args... args) {
   std::abort();
 }
 
-#endif  // _OPENTOKEN__HARE__CRASH_H_
+template <typename T>
+static inline T* NOTNULL_impl(const char* filename, int line, T* ptr) {
+  CHECK_impl(filename, line, ptr != nullptr, "ptr is null");
+  return ptr;
+}
+
+#endif  // _OPENTOKEN__HARE__CHECK_H_

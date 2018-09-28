@@ -1,7 +1,7 @@
 #ifndef _OPENTOKEN__HARE__NETWORK_H_
 #define _OPENTOKEN__HARE__NETWORK_H_
 
-#include "crash.h"
+#include "check.h"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -101,7 +101,8 @@ class UDPSocket final {
     my_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
     my_addr_.sin_port = htons(port);
 
-    CHECK(bind(fd_, (sockaddr*)&my_addr_, sizeof(my_addr_)) >= 0);
+    CHECK(bind(fd_, (sockaddr*)&my_addr_, sizeof(my_addr_)) >= 0,
+          "port %d probably in use", port);
   }
 
   UDPSocket() : fd_(socket(AF_INET, SOCK_DGRAM, 0)) { CHECK(fd_ > 0); }

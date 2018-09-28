@@ -1,3 +1,4 @@
+import sys
 import os
 import logging
 from time import time
@@ -40,7 +41,8 @@ class DataLogger:
 
   def log_line(self, line):
     self._maybe_roll_logfile()
-    new_data = (line + '\n').encode()
+    delimeted_line = line if line[-1] == '\n' else (line + '\n')
+    new_data = delimeted_line.encode()
     self.hasher.update(new_data)
     self.f.write(new_data)
     self._maybe_roll_logfile()
@@ -86,3 +88,21 @@ class DataLogger:
     self.hasher = sha1()
     self.f = open(path, 'wb')
     logger.info('rolled logfile to {}'.format(path))
+
+
+def run_logger():
+  kwargs = {
+      'data_type_prefix': sys.argv[1],
+  }
+  if len(sys.argv) > 2:
+    kwargs['max_output_size_bytes'] = int(sys.argv[2])
+  if len(sys.argv) > 3:
+    kwargs['max_file_duration_seconds'] = float(sys.argv[3])
+  logger = DataLogger(**kwargs)
+
+  for line in sys.stdin:
+    logger.log_line(line)
+
+
+if __name__ == '__main__':
+  run_logger()

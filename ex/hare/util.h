@@ -1,6 +1,7 @@
 #ifndef _OPENTOKEN__HARE__UTIL_H_
 #define _OPENTOKEN__HARE__UTIL_H_
 
+#include <cstdio>
 #include <string>
 
 namespace opentoken {
@@ -21,7 +22,8 @@ class File final {
   File(const std::string& path, const char* mode = "r")
       : fp_(fopen(path.c_str(), mode)) {}
 
-  FILE* fp() const { return fp_; }
+  FILE* f() const { return fp_; }
+  int fp() const { return ::fileno(fp_); }
 
   ~File() {
     auto fp = fp_;

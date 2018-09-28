@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../crash.h"
+#include "../check.h"
 
 #include <cassert>
 #include <cstddef>
