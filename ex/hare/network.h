@@ -16,7 +16,7 @@ using std::string;
 
 string sockaddr_to_string(const sockaddr_in& addr) {
   char buf[INET_ADDRSTRLEN];
-  CHECK(inet_ntop(AF_INET, &addr, &buf[0], sizeof(buf)));
+  CHECK(inet_ntop(AF_INET, &addr.sin_addr, &buf[0], sizeof(buf)));
   return string{buf, std::strlen(buf)} + ":" +
          std::to_string(ntohs(addr.sin_port));
 }
@@ -29,7 +29,8 @@ sockaddr_in string_to_sockaddr(string addr_str) {
       .sin_family = AF_INET,
       .sin_port = htons(std::stoi(addr_str.substr(colon_pos + 1))),
   };
-  CHECK(inet_pton(AF_INET, addr_str.substr(0, colon_pos).c_str(), &result) > 0);
+  CHECK(inet_pton(AF_INET, addr_str.substr(0, colon_pos).c_str(),
+                  &result.sin_addr) > 0);
   return result;
 }
 
