@@ -3,11 +3,12 @@ ROOT:=$(shell dirname $(MKFILE_PATH))/
 UNAME_S:=$(shell uname -s)
 
 CXX:=g++
-INCLUDES:=-isystem /usr/local/opt/openssl/include/ -I$(ROOT) -isystem $(ROOT)uWebsockets/src/
+INCLUDES:=-isystem /usr/local/opt/openssl/include/ -I$(ROOT) -isystem $(ROOT)uWebSockets/src/
 CXX_FLAGS:=-g --std=gnu++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-format-security -Wno-c99-extensions -O3 -flto $(INCLUDES)
-LDFLAGS:=-L/usr/local/opt/openssl/lib/ -lssl -lcrypto -L$(ROOT) -luWS -lz -luv -flto
+LDFLAGS:=-L/usr/local/opt/openssl/lib/ -lssl -lcrypto -L$(ROOT) -luWS -lz -flto
 
 ifeq ($(UNAME_S),Darwin)
+LDFLAGS+= -luv
 LIBUWS:=libuWS.dylib
 else
 LIBUWS:=libuWS.so
@@ -29,11 +30,11 @@ dbg_make:
 	@echo CPP $(CPP)
 	@echo OBJ $(OBJ)
 
-$(ROOT)$(LIBUWS): $(ROOT)uWebsockets/$(LIBUWS)
-	@cp $(ROOT)uWebsockets/$(LIBUWS) $(ROOT)
+$(ROOT)$(LIBUWS): $(ROOT)uWebSockets/$(LIBUWS)
+	@cp $(ROOT)uWebSockets/$(LIBUWS) $(ROOT)
 
-$(ROOT)uWebsockets/$(LIBUWS):
-	make -C $(ROOT)uWebsockets
+$(ROOT)uWebSockets/$(LIBUWS):
+	make -C $(ROOT)uWebSockets
 
 $(BIN) : $(BUILD_DIR)/$(BIN)
 	@cp $^ $(ROOT)$@

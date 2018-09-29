@@ -27,8 +27,7 @@ bool check_in_event(const pollfd* fds, int pos) {
   }
 }
 
-void process_wss_stream(const char* wss_input_url,
-                        const char* destination_address_str) {
+void process_wss_stream(const char* destination_address_str) {
   using namespace std;
   Hasher hasher{getenv("SECRET_MESSAGE_KEY")};
   BinanceFileReader reader;
@@ -78,9 +77,6 @@ void process_wss_stream(const char* wss_input_url,
 }  // namespace opentoken
 
 int main(int argc, const char** argv) {
-  const auto wss_input_url =
-      (argc < 2 ? "wss://stream.binance.com:9443/ws/btcusdt@trade/ethusdt@trade"
-                : argv[1]);
-  const auto destination_address_str = argc < 3 ? "127.0.0.1:60000" : argv[2];
-  opentoken::process_wss_stream(wss_input_url, destination_address_str);
+  const auto destination_address_str = argc < 2 ? "127.0.0.1:60000" : argv[1];
+  opentoken::process_wss_stream(destination_address_str);
 }

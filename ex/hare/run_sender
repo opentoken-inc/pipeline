@@ -1,4 +1,5 @@
 #!/bin/bash
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+export LD_LIBRARY_PATH="$THIS_DIR"
 "$THIS_DIR"/wsscat/wsscat "$WSS_URI" | \
   "$THIS_DIR"/sender $RECEIVER_ADDR
