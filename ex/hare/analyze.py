@@ -1,22 +1,27 @@
 import sys
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from matplotlib import pyplot as plt
 from pprint import pprint
 from ujson import loads
 
+from utils import zstd_open
+
 def process(events):
+  quantities = defaultdict(OrderedDict)
   wss_events = defaultdict(dict)
   udp_events = defaultdict(dict)
   for evt in events:
+    market = evt['s']
     if evt['source'] == 'wss':
-      assert evt['t'] not in wss_events[evt['s']]
-      wss_events[evt['s']][evt['t']] = evt['epochNanos']
+      assert evt['t'] not in wss_events[market]
+      wss_events[market][evt['t']] = evt['epochNanos']
     elif evt['source'] == 'udp':
-      assert evt['t'] not in udp_events[evt['s']]
-      udp_events[evt['s']][evt['t']] = evt['epochNanos']
+      assert evt['t'] not in udp_events[market]
+      udp_events[market][evt['t']] = evt['epochNanos']
+      quantities[market][evt['t']] = evt['q']
 
-  diffs = defaultdict(dict)
+  diffs = defaultdict(OrderedDict)
   for market, v in wss_events.items():
     for tid, t in v.items():
       if tid in udp_events[market]:
@@ -27,9 +32,13 @@ def process(events):
   results = defaultdict(dict)
   for market, v in diffs.items():
     vs = [vv for vv in v.values() if vv]
+    qm = quantities[market]
+    qs = [qm[k] for k, vv in v.items() if vv]
     plt.figure()
-    plt.hist([v for v in vs if abs(v) > 0.01])
+    plt.scatter(qs, vs)
     plt.title(market)
+    plt.xlabel('quantity')
+    plt.ylabel('latency (s)')
     results[market]['mean'] = np.mean(vs)
     results[market]['median'] = np.median(vs)
     results[market]['min'] = np.min(vs)
@@ -48,8 +57,10 @@ def loads_or_skip(l):
     return None
 
 def main(argv):
-  with open(argv[0]) as f:
-    events = [e for e in (loads_or_skip(l) for l in f.readlines()) if e]
+  events = []
+  for path in sorted(argv):
+    with zstd_open(path) as f:
+      events.extend(e for e in (loads_or_skip(l) for l in f.readlines()) if e)
   process(events)
 
 if __name__ == '__main__':

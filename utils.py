@@ -16,6 +16,9 @@ class _ZReader:
       else:
         return b''.join(res).decode()
 
+  def readlines(self):
+    return self.read().split()
+
 
 @contextmanager
 def zstd_open(path):
