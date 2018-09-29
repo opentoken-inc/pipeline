@@ -5,7 +5,7 @@ UNAME_S:=$(shell uname -s)
 CXX:=g++
 INCLUDES:=-isystem /usr/local/opt/openssl/include/ -I$(ROOT) -isystem $(ROOT)uWebsockets/src/
 CXX_FLAGS:=-g --std=gnu++17 -Wfatal-errors -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-format-security -Wno-c99-extensions -O3 -flto $(INCLUDES)
-LDFLAGS:=-L/usr/local/opt/openssl/lib/ -lssl -lcrypto -L$(ROOT) -luWS -flto
+LDFLAGS:=-L/usr/local/opt/openssl/lib/ -lssl -lcrypto -L$(ROOT) -luWS -lz -luv -flto
 
 ifeq ($(UNAME_S),Darwin)
 LIBUWS:=libuWS.dylib
@@ -29,9 +29,11 @@ dbg_make:
 	@echo CPP $(CPP)
 	@echo OBJ $(OBJ)
 
-$(ROOT)$(LIBUWS):
-	@make -C $(ROOT)uWebsockets
+$(ROOT)$(LIBUWS): $(ROOT)uWebsockets/$(LIBUWS)
 	@cp $(ROOT)uWebsockets/$(LIBUWS) $(ROOT)
+
+$(ROOT)uWebsockets/$(LIBUWS):
+	make -C $(ROOT)uWebsockets
 
 $(BIN) : $(BUILD_DIR)/$(BIN)
 	@cp $^ $(ROOT)$@
@@ -55,7 +57,7 @@ run: $(BIN)
 test:
 	make -C ./test
 
-.PHONY : clean $(BIN) test receiver sender
+.PHONY : clean $(BIN) test receiver sender wsscat
 .DELETE_ON_ERROR:
 clean :
-	-rm -f $(ROOT)$(BIN) $(BUILD_DIR)/$(BIN) $(OBJ) $(DEP)
+	-rm -f $(ROOT)$(BIN) $(BUILD_DIR)/$(BIN) $(OBJ) $(DEP) $(ROOT)$(LIBUWS)

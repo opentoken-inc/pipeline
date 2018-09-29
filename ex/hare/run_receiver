@@ -1,4 +1,4 @@
 #!/bin/bash
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-websocat -UE wss://stream.binance.com:9443/ws/btcusdt@trade/ethusdt@trade | \
-  "$THIS_DIR"/receiver/receiver >(python "$THIS_DIR"/../../data_logger.py hare_binance 10000000 300)
+"$THIS_DIR"/wsscat/wsscat "$WSS_URI" | \
+  "$THIS_DIR"/receiver/receiver >(python "$THIS_DIR"/../../data_logger.py hare_binance 10000000 600)

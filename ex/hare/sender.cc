@@ -2,7 +2,6 @@
 #include "coins.h"
 #include "hasher.h"
 #include "network.h"
-#include "uWS.h"
 #include "util.h"
 
 #include <netinet/in.h>

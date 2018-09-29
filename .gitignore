@@ -1,5 +1,7 @@
 *.swp
 *.pyc
+*.so
+*.dylib
 venv*
 .DS_Store
 client/dist
@@ -10,3 +12,4 @@ google_client.json
 working/
 compressing/
 uploading/
+build/

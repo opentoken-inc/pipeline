@@ -46,6 +46,7 @@ void process_stdin(const char* output_path, int recv_port) {
   Hasher hasher{getenv("SECRET_MESSAGE_KEY")};
   BinanceFileReader reader;
   File output_file{output_path, "w"};
+  setvbuf(output_file.f(), nullptr, _IOLBF, 8192);
 
   UDPMessage in_message{};
   UDPSocket socket{recv_port};
