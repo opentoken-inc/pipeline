@@ -19,8 +19,8 @@
 #define CHECK_EQ(...) CHECK_EQ_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_ALL(...) \
   CHECK_ALL_impl(__FILE__, __LINE__, __VA_ARGS__)  // not implemented
+#define CHECK_NOTNULL(...) CHECK_NOTNULL_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define FAIL(...) FAIL_impl(__FILE__, __LINE__, __VA_ARGS__)
-#define NOTNULL(...) NOTNULL_impl(__FILE__, __LINE__, __VA_ARGS__)
 
 namespace {
 
@@ -89,7 +89,7 @@ FAIL_impl(const char* filename, int line, const char* format, Args... args) {
 }
 
 template <typename T>
-static inline T* NOTNULL_impl(const char* filename, int line, T* ptr) {
+static inline T* CHECK_NOTNULL_impl(const char* filename, int line, T* ptr) {
   CHECK_impl(filename, line, ptr != nullptr, "ptr is null");
   return ptr;
 }

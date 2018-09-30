@@ -18,7 +18,7 @@ constexpr size_t kHashSizeBytes = 32;
 class Hasher final {
  public:
   Hasher(std::string key) : base_ctx_(init_base_context(key)) {}
-  Hasher(const char *key) : Hasher(std::string{NOTNULL(key)}) {}
+  Hasher(const char *key) : Hasher(std::string{CHECK_NOTNULL(key)}) {}
 
   ~Hasher() { HMAC_CTX_cleanup(&base_ctx_); }
 

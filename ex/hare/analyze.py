@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import seaborn as sns
 from collections import defaultdict, OrderedDict
 from matplotlib import pyplot as plt
 from pprint import pprint
@@ -31,14 +32,13 @@ def process(events):
 
   results = defaultdict(dict)
   for market, v in diffs.items():
-    vs = [vv for vv in v.values() if vv]
+    v_filtered = [(k, vv) for k, vv in v.items() if vv and abs(vv) > 0.01]
+    vs = [vv for _, vv in v_filtered]
     qm = quantities[market]
-    qs = [qm[k] for k, vv in v.items() if vv]
-    plt.figure()
-    plt.scatter(qs, vs)
-    plt.title(market)
-    plt.xlabel('quantity')
-    plt.ylabel('latency (s)')
+    qs = [qm[k] for k, vv in v_filtered]
+    g = (
+        sns.jointplot(np.log(qs), vs).set_axis_labels(
+            'log quantity', 'latency (s)'))
     results[market]['mean'] = np.mean(vs)
     results[market]['median'] = np.median(vs)
     results[market]['min'] = np.min(vs)

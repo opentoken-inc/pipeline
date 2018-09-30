@@ -1,5 +1,5 @@
 #!/bin/bash
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 export LD_LIBRARY_PATH="$THIS_DIR"
-"$THIS_DIR"/wsscat/wsscat "$WSS_URI" | \
-  "$THIS_DIR"/receiver/receiver >(python "$THIS_DIR"/../../data_logger.py hare_binance 10000000 600)
+"$THIS_DIR"/receiver/receiver \
+  >(python "$THIS_DIR"/../../data_logger.py hare_binance_b 10000000 600) "$WSS_URI"

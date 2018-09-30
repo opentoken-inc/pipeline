@@ -15,21 +15,16 @@ using namespace std;
 
 void process_wss_stream(const char* wss_input_url, const char* output_path) {
   using namespace std;
-  File output_file{output_path, "w"};
+  PosixFile output_file{output_path, O_WRONLY};
   uWS::Hub h;
-  setvbuf(output_file.f(), nullptr, _IOFBF, 8192);
 
   h.onMessage([&output_file](uWS::WebSocket<uWS::CLIENT>* ws, char* message,
                              size_t length, uWS::OpCode opCode) {
-    fwrite(message, 1, length, output_file.f());
-    fputc('\n', output_file.f());
-    fflush(output_file.f());
+    const auto str_with_newline = (string{message, length} + "\n");
+    write(output_file.fd(), str_with_newline.data(), str_with_newline.size());
   });
 
-  h.onError([](void* user) {
-    cerr << "FAILURE: Connection failed! Timeout?" << endl;
-    exit(-1);
-  });
+  h.onError([](void* user) { FAIL("FAILURE: Connection failed! Timeout?"); });
 
   h.onDisconnection([](uWS::WebSocket<uWS::CLIENT>* ws, int code, char* message,
                        size_t length) {
@@ -43,7 +38,7 @@ void process_wss_stream(const char* wss_input_url, const char* output_path) {
   });
 
   h.onPing([](uWS::WebSocket<uWS::CLIENT>* ws, char* message, size_t length) {
-    ws->send(R"({"pong":0})", uWS::OpCode::PONG);
+    ws->send("", uWS::OpCode::PONG);
   });
 
   h.connect(wss_input_url);

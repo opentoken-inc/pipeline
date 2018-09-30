@@ -58,7 +58,7 @@ run: $(BIN)
 test:
 	make -C ./test
 
-.PHONY : clean $(BIN) test receiver sender wsscat
+.PHONY : clean $(BIN) test receiver sender wsscat wssreplay
 .DELETE_ON_ERROR:
 clean :
 	-rm -f $(ROOT)$(BIN) $(BUILD_DIR)/$(BIN) $(OBJ) $(DEP) $(ROOT)$(LIBUWS)
