@@ -1,6 +1,7 @@
 #ifndef _OPENTOKEN__HARE__CHECK_H_
 #define _OPENTOKEN__HARE__CHECK_H_
 
+#include <errno.h>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -15,6 +16,7 @@
 #endif
 
 #define CHECK(...) CHECK_impl(__FILE__, __LINE__, __VA_ARGS__)
+#define CHECK_ERRNO(...) CHECK_ERRNO_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_OK(...) CHECK_OK_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_EQ(...) CHECK_EQ_impl(__FILE__, __LINE__, __VA_ARGS__)
 #define CHECK_ALL(...) \
@@ -56,6 +58,12 @@ static inline void
 CHECK_impl(const char* filename, int line, bool condition, const char* format,
            const std::string s, Args... args) {
   CHECK_impl(filename, line, condition, format, s.c_str(), args...);
+}
+
+static inline void CHECK_ERRNO_impl(const char* filename, int line,
+                                    bool condition) {
+  CHECK_impl(filename, line, condition, "errno %d (%s)", errno,
+             strerror(errno));
 }
 
 template <typename... Args>

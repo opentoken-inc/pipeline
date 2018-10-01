@@ -59,7 +59,13 @@ void send_one_to_client(uS::Timer* timer_parent) {
     size_t _;
     len = getline(&line, &_, timer->input_file->f());
     if (len < 0) {
-      if (errno == EAGAIN || errno == EINTR) continue;
+      if (errno == EAGAIN || errno == EINTR) {
+        continue;
+      }
+      if (errno == EPIPE) {
+        printf("client disconnected abruptly\n");
+        break;
+      }
       FAIL("errno = %d", errno);
     }
   } while (false);

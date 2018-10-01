@@ -53,7 +53,7 @@ class PosixFile final {
   PosixFile() = default;
   PosixFile(const std::string& path, int oflag)
       : fd_(open(path.c_str(), oflag)) {
-    CHECK(fd_ >= 0);
+    CHECK_ERRNO(fd_ >= 0);
   }
 
   int fd() const { return fd_; }
@@ -79,7 +79,7 @@ class FileLineReader final {
     do {
       if (getline(&line_, &len, f_) < 0) {
         if (errno == EAGAIN || errno == EINTR) continue;
-        FAIL("errno = %d", errno);
+        CHECK_ERRNO(false);
       }
     } while (false);
     if (len > 0) {

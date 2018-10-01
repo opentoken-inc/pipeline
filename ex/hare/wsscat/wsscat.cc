@@ -16,7 +16,7 @@ using namespace std;
 
 void process_wss_stream(const char* wss_input_url, const char* output_path) {
   using namespace std;
-  PosixFile output_file{output_path, O_WRONLY};
+  PosixFile output_file{output_path, O_WRONLY | O_CREAT};
   uWS::Hub h;
 
   h.onMessage([&output_file](uWS::WebSocket<uWS::CLIENT>* ws, char* message,
@@ -41,9 +41,8 @@ void process_wss_stream(const char* wss_input_url, const char* output_path) {
     cerr << "Connected!" << endl;
   });
 
-  h.onPing([](uWS::WebSocket<uWS::CLIENT>* ws, char* message, size_t length) {
-    ws->send("", uWS::OpCode::PONG);
-  });
+  h.onPing([](uWS::WebSocket<uWS::CLIENT>* ws, char* /*message*/,
+              size_t /*length*/) { ws->send("", uWS::OpCode::PONG); });
 
   h.connect(wss_input_url);
   h.run();
