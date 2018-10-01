@@ -63,6 +63,10 @@ void process_stdin(const char* output_path, const char* wss_input_uri,
                             write_json_to_file(&output_file, trade, "wss");
                           }};
 
+  while (!reader.has_fd()) {
+    reader.poll();
+  }
+
   const int timeout = -1;
   pollfd fds[] = {
       {
@@ -70,22 +74,13 @@ void process_stdin(const char* output_path, const char* wss_input_uri,
           .events = POLLIN,
       },
       {
-          .fd = -1,
+          .fd = reader.fd(),
           .events = POLLIN,
       },
   };
 
-  while (!reader.has_fd()) {
-    reader.poll();
-  }
-  unsigned num_fds = 1;
   while (true) {
-    if (reader.has_fd()) {
-      fds[1].fd = reader.fd();
-      num_fds = 2;
-    }
-
-    const int rc = poll(fds, num_fds, timeout);
+    const int rc = poll(fds, sizeof(fds) / sizeof(fds[0]), timeout);
     if (rc < 0) {
       if (errno == EAGAIN || errno == EINTR || errno) {
         fprintf(stderr, "Error %d\n", errno);

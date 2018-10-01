@@ -67,5 +67,44 @@ class PosixFile final {
   int fd_;
 };
 
+class FileLineReader final {
+ public:
+  FileLineReader() = default;
+
+  int fd() const { return ::fileno(f_); }
+  bool has_next() const { return !done_; }
+
+  char* read_line() {
+    size_t len = 0;
+    do {
+      if (getline(&line_, &len, f_) < 0) {
+        if (errno == EAGAIN || errno == EINTR) continue;
+        FAIL("errno = %d", errno);
+      }
+    } while (false);
+    if (len > 0) {
+      return line_;
+    } else {
+      done_ = true;
+      return nullptr;
+    }
+  }
+
+  ~FileLineReader() {
+    if (line_) {
+      std::free(line_);
+      line_ = nullptr;
+    }
+  }
+
+ private:
+  FileLineReader(FileLineReader&) = delete;
+  FileLineReader(FileLineReader&&) = delete;
+
+  FILE* const f_ = stdin;
+  char* line_ = nullptr;
+  bool done_ = false;
+};
+
 }  // namespace opentoken
 #endif  // __OPENTOKEN__HARE__UTIL_H_

@@ -9,36 +9,40 @@ from ujson import loads
 from utils import zstd_open
 
 def process(events):
-  quantities = defaultdict(OrderedDict)
   wss_events = defaultdict(dict)
   udp_events = defaultdict(dict)
   for evt in events:
     market = evt['s']
     if evt['source'] == 'wss':
       assert evt['t'] not in wss_events[market]
-      wss_events[market][evt['t']] = evt['epochNanos']
+      wss_events[market][evt['t']] = evt
     elif evt['source'] == 'udp':
       assert evt['t'] not in udp_events[market]
-      udp_events[market][evt['t']] = evt['epochNanos']
-      quantities[market][evt['t']] = evt['q']
+      udp_events[market][evt['t']] = evt
 
+  tkey = 'epochNanos'
   diffs = defaultdict(OrderedDict)
-  for market, v in wss_events.items():
-    for tid, t in v.items():
+  for market, wss_evts in wss_events.items():
+    for tid, wss_evt in wss_evts.items():
       if tid in udp_events[market]:
-        diffs[market][tid] = (t - udp_events[market][tid]) / 1e9
+        diffs[market][tid] = (
+            wss_evt[tkey] - udp_events[market][tid][tkey]) / 1e9
       else:
         diffs[market][tid] = None
 
   results = defaultdict(dict)
   for market, v in diffs.items():
-    v_filtered = [(k, vv) for k, vv in v.items() if vv and abs(vv) > 0.01]
+    v_filtered = [(tid, vv) for tid, vv in v.items() if vv and abs(vv)]
     vs = [vv for _, vv in v_filtered]
-    qm = quantities[market]
-    qs = [qm[k] for k, vv in v_filtered]
-    g = (
-        sns.jointplot(np.log(qs), vs).set_axis_labels(
-            'log quantity', 'latency (s)'))
+    evts = wss_events[market]
+    if 'USDT' in market:
+      q_usd = [evts[tid]['p'] * evts[tid]['q'] for tid, vv in v_filtered]
+    elif 'BTC' in market:
+      q_usd = [6500 * evts[tid]['p'] * evts[tid]['q'] for tid, vv in v_filtered]
+    g = sns.jointplot(q_usd, vs).set_axis_labels('quantity ($)', 'latency (s)')
+    g.fig.suptitle(market)
+    g.ax_joint.set_xscale('log')
+    g.ax_marg_x.set_xscale('log')
     results[market]['mean'] = np.mean(vs)
     results[market]['median'] = np.median(vs)
     results[market]['min'] = np.min(vs)

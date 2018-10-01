@@ -39,7 +39,7 @@ sockaddr_in string_to_sockaddr(string addr_str) {
 class UDPMessage final {
  public:
   UDPMessage() = default;
-  UDPMessage(size_t size) : size_(size) {}
+  explicit UDPMessage(size_t size) : size_(size) {}
   UDPMessage(UDPMessage&) = default;
 
   size_t Recv(int socket) {

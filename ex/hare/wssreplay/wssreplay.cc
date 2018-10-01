@@ -15,39 +15,63 @@ namespace opentoken {
 namespace {
 using namespace std;
 
-struct Context {
-  File* input_file;
+void send_one_to_client(uS::Timer* timer_parent);
+
+struct ReplayLineTimer final {
+  ReplayLineTimer(uS::Loop* loop, uWS::WebSocket<uWS::SERVER>* ws,
+                  File* input_file)
+      : timer_(new uS::Timer(loop)),
+        ws(ws),
+        input_file(input_file),
+        file_pos(0) {
+    timer_->setData(this);
+    ws->setUserData(this);
+  }
+
+  void start() { timer_->start(send_one_to_client, 0, 0); }
+
+  ~ReplayLineTimer() {
+    timer_->setData(nullptr);
+    timer_->close();
+    ws->setUserData(nullptr);
+  }
+
+ private:
+  uS::Timer* const timer_;
+
+ public:
+  uWS::WebSocket<uWS::SERVER>* const ws;
+  File* const input_file;
   ssize_t file_pos;
 };
 
-void send_callback(uWS::WebSocket<uWS::SERVER>* ws, void* data, bool cancelled,
-                   void* reserved) {
-  if (cancelled) {
-    printf("Cancelled\n");
-    return;
-  }
-  const auto context = static_cast<Context*>(ws->getUserData());
-  if (!context) {
-    printf("no context, skipping\n");
+void send_one_to_client(uS::Timer* timer_parent) {
+  const auto timer =
+      reinterpret_cast<ReplayLineTimer*>(timer_parent->getData());
+  if (!timer) {
+    printf("no timer, skipping\n");
     return;
   }
   char* line = nullptr;
-  size_t len = 0;
-  CHECK_OK(fseek(context->input_file->f(), context->file_pos, SEEK_SET));
+  ssize_t len = 0;
+  CHECK_OK(fseek(timer->input_file->f(), timer->file_pos, SEEK_SET));
   do {
-    if (getline(&line, &len, context->input_file->f()) < 0) {
+    size_t _;
+    len = getline(&line, &_, timer->input_file->f());
+    if (len < 0) {
       if (errno == EAGAIN || errno == EINTR) continue;
       FAIL("errno = %d", errno);
     }
   } while (false);
   if (len > 0) {
-    printf("sending with len %zu\n", len);
-    ws->send(line, len, uWS::OpCode::BINARY, send_callback, context);
-    printf("...sent\n");
-    context->file_pos += len + 1;
+    timer->ws->send(line, static_cast<size_t>(len - 1), uWS::OpCode::BINARY);
+    timer->start();
+    timer->file_pos += len;
   } else {
-    printf("done sending for client");
-    exit(0);
+    printf("done sending for client, closing\n");
+    const auto ws = timer->ws;
+    delete timer;
+    ws->close();
   }
   std::free(line);
 }
@@ -71,19 +95,16 @@ void serve_wss_from_file(const char* input_file_path, int port) {
     cerr << "Client got disconnected with data: " << ws->getUserData()
          << ", code: " << code << ", message: <" << string(message, length)
          << ">" << endl;
-    delete ws->getUserData();
-    ws->setUserData(nullptr);
+    if (ws->getUserData()) {
+      delete reinterpret_cast<ReplayLineTimer*>(ws->getUserData());
+    }
   });
 
-  h.onConnection(
-      [&input_file](uWS::WebSocket<uWS::SERVER>* ws, uWS::HttpRequest req) {
-        cerr << "Connected!" << endl;
-        ws->setUserData(new Context{
-            .input_file = &input_file,
-            .file_pos = 0,
-        });
-        send_callback(ws, nullptr, false, nullptr);
-      });
+  h.onConnection([&input_file, &h](uWS::WebSocket<uWS::SERVER>* ws,
+                                   uWS::HttpRequest /*req*/) {
+    cerr << "Connected!" << endl;
+    (new ReplayLineTimer{h.getLoop(), ws, &input_file})->start();
+  });
 
   CHECK(h.listen(port));
   h.run();

@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <iostream>
+#include <string>
 
 namespace opentoken {
 namespace {
@@ -28,9 +29,12 @@ void process_wss_stream(const char* wss_input_url, const char* output_path) {
 
   h.onDisconnection([](uWS::WebSocket<uWS::CLIENT>* ws, int code, char* message,
                        size_t length) {
-    cerr << "Client got disconnected with data: " << ws->getUserData()
-         << ", code: " << code << ", message: <" << string(message, length)
-         << ">" << endl;
+    if (code == 1000) {
+      fprintf(stderr, "end of stream, exiting\n");
+    } else {
+      FAIL("Disconnected. code: %d, message %s\n", code,
+           std::string(message, length).c_str());
+    }
   });
 
   h.onConnection([](uWS::WebSocket<uWS::CLIENT>* ws, uWS::HttpRequest req) {

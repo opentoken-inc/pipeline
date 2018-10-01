@@ -2,14 +2,13 @@
 #define _OPENTOKEN__HARE__BINANCE_H_
 
 #include "hasher.h"
+#include "util.h"
 
 #include "gason/gason.h"
 
 #include <inttypes.h>
 #include <cstdlib>
-#include <iostream>
 #include <optional>
-#include <string>
 
 namespace opentoken {
 
@@ -74,45 +73,6 @@ std::optional<BinanceTrade> json_to_binance_trade(const gason::JsonValue& obj) {
   CHECK(found_event, "Did not find trade event");
 
   return {result};
-}
-
-class FileLineReader final {
- public:
-  FileLineReader() = default;
-
-  int fd() const { return ::fileno(f_); }
-  bool has_next() const { return !done_; }
-
-  char* read_line() {
-    size_t len = 0;
-    do {
-      if (getline(&line_, &len, f_) < 0) {
-        if (errno == EAGAIN || errno == EINTR) continue;
-        FAIL("errno = %d", errno);
-      }
-    } while (false);
-    if (len > 0) {
-      return line_;
-    } else {
-      done_ = true;
-      return nullptr;
-    }
-  }
-
-  ~FileLineReader() {
-    if (line_) {
-      std::free(line_);
-      line_ = nullptr;
-    }
-  }
-
- private:
-  FileLineReader(FileLineReader&) = delete;
-  FileLineReader(FileLineReader&&) = delete;
-
-  FILE* const f_ = stdin;
-  char* line_ = nullptr;
-  bool done_ = false;
 };
 
 class BinanceTradeParser final {
