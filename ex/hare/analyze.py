@@ -32,13 +32,13 @@ def process(events):
 
   results = defaultdict(dict)
   for market, v in diffs.items():
-    v_filtered = [(tid, vv) for tid, vv in v.items() if vv and abs(vv)]
-    vs = [vv for _, vv in v_filtered]
+    v_filtered = [(tid, vv) for tid, vv in v.items() if vv]
+    vs = np.array([vv for _, vv in v_filtered])
     evts = wss_events[market]
     if 'USDT' in market:
-      q_usd = [evts[tid]['p'] * evts[tid]['q'] for tid, vv in v_filtered]
+      q_usd = np.array([evts[tid]['p'] * evts[tid]['q'] for tid, vv in v_filtered])
     elif 'BTC' in market:
-      q_usd = [6500 * evts[tid]['p'] * evts[tid]['q'] for tid, vv in v_filtered]
+      q_usd = np.array([6500 * evts[tid]['p'] * evts[tid]['q'] for tid, vv in v_filtered])
     g = sns.jointplot(q_usd, vs).set_axis_labels('quantity ($)', 'latency (s)')
     g.fig.suptitle(market)
     g.ax_joint.set_xscale('log')

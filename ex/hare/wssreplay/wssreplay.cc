@@ -8,8 +8,8 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <iostream>
-#include <map>
 #include <string>
+#include <vector>
 
 namespace opentoken {
 namespace {
@@ -19,13 +19,43 @@ void send_one_to_client(uS::Timer* timer_parent);
 
 struct ReplayLineTimer final {
   ReplayLineTimer(uS::Loop* loop, uWS::WebSocket<uWS::SERVER>* ws,
-                  File* input_file)
-      : timer_(new uS::Timer(loop)),
-        ws(ws),
-        input_file(input_file),
-        file_pos(0) {
+                  const vector<File>* input_files)
+      : timer_(new uS::Timer(loop)), ws_(ws), input_files_(input_files) {
     timer_->setData(this);
-    ws->setUserData(this);
+    ws_->setUserData(this);
+  }
+
+  void send_one() {
+    ssize_t len;
+    CHECK_OK(fseek(input_file(), file_pos_, SEEK_SET));
+    do {
+      len = getline(&line_, &line_len_, input_file());
+      if (len < 0) {
+        if (errno == EAGAIN || errno == EINTR) {
+          continue;
+        }
+        if (errno == EPIPE) {
+          printf("client disconnected abruptly\n");
+          break;
+        }
+        FAIL("errno = %d", errno);
+      }
+    } while (false);
+    if (len > 0) {
+      ws_->send(line_, static_cast<size_t>(len - 1), uWS::OpCode::BINARY);
+      start();
+      file_pos_ += len;
+    } else if (file_num_ + 1 < input_files_->size()) {
+      ++file_num_;
+      file_pos_ = 0;
+      printf("rolled to file %zu for client\n", file_num_);
+      start();
+    } else {
+      printf("done sending for client, closing\n");
+      const auto local_ws = ws_;
+      delete this;
+      local_ws->close();
+    }
   }
 
   void start() { timer_->start(send_one_to_client, 0, 0); }
@@ -33,16 +63,20 @@ struct ReplayLineTimer final {
   ~ReplayLineTimer() {
     timer_->setData(nullptr);
     timer_->close();
-    ws->setUserData(nullptr);
+    ws_->setUserData(nullptr);
+    std::free(line_);
   }
 
  private:
   uS::Timer* const timer_;
+  uWS::WebSocket<uWS::SERVER>* const ws_;
+  const vector<File>* input_files_;
+  char* line_ = nullptr;
+  size_t line_len_ = 0;
+  size_t file_num_ = 0;
+  ssize_t file_pos_ = 0;
 
- public:
-  uWS::WebSocket<uWS::SERVER>* const ws;
-  File* const input_file;
-  ssize_t file_pos;
+  FILE* input_file() { return (*input_files_)[file_num_].f(); }
 };
 
 void send_one_to_client(uS::Timer* timer_parent) {
@@ -52,39 +86,13 @@ void send_one_to_client(uS::Timer* timer_parent) {
     printf("no timer, skipping\n");
     return;
   }
-  char* line = nullptr;
-  ssize_t len = 0;
-  CHECK_OK(fseek(timer->input_file->f(), timer->file_pos, SEEK_SET));
-  do {
-    size_t _;
-    len = getline(&line, &_, timer->input_file->f());
-    if (len < 0) {
-      if (errno == EAGAIN || errno == EINTR) {
-        continue;
-      }
-      if (errno == EPIPE) {
-        printf("client disconnected abruptly\n");
-        break;
-      }
-      FAIL("errno = %d", errno);
-    }
-  } while (false);
-  if (len > 0) {
-    timer->ws->send(line, static_cast<size_t>(len - 1), uWS::OpCode::BINARY);
-    timer->start();
-    timer->file_pos += len;
-  } else {
-    printf("done sending for client, closing\n");
-    const auto ws = timer->ws;
-    delete timer;
-    ws->close();
-  }
-  std::free(line);
+  timer->send_one();
 }
 
-void serve_wss_from_file(const char* input_file_path, int port) {
+void serve_wss_from_file(int port, const char** input_paths,
+                         int n_input_paths) {
   using namespace std;
-  File input_file{input_file_path};
+  vector<File> input_files{input_paths, input_paths + n_input_paths};
   uWS::Hub h;
 
   h.onMessage([](uWS::WebSocket<uWS::SERVER>* ws, char* message, size_t length,
@@ -106,10 +114,10 @@ void serve_wss_from_file(const char* input_file_path, int port) {
     }
   });
 
-  h.onConnection([&input_file, &h](uWS::WebSocket<uWS::SERVER>* ws,
-                                   uWS::HttpRequest /*req*/) {
+  h.onConnection([&input_files, &h](uWS::WebSocket<uWS::SERVER>* ws,
+                                    uWS::HttpRequest /*req*/) {
     cerr << "Connected!" << endl;
-    (new ReplayLineTimer{h.getLoop(), ws, &input_file})->start();
+    (new ReplayLineTimer{h.getLoop(), ws, &input_files})->start();
   });
 
   CHECK(h.listen(port));
@@ -120,8 +128,7 @@ void serve_wss_from_file(const char* input_file_path, int port) {
 }  // namespace opentoken
 
 int main(int argc, const char** argv) {
-  CHECK(argc >= 2, "usage: %s input_path [port]", argv[0]);
-  const auto input_file_path = argv[1];
-  const auto port_str = argc < 3 ? "60000" : argv[2];
-  opentoken::serve_wss_from_file(input_file_path, std::stoi(port_str));
+  CHECK(argc >= 3, "usage: %s port input_path [input_path ...]", argv[0]);
+  const auto port_str = argv[1];
+  opentoken::serve_wss_from_file(std::stoi(port_str), &argv[2], argc - 2);
 }

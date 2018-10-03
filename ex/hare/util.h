@@ -75,9 +75,10 @@ class FileLineReader final {
   bool has_next() const { return !done_; }
 
   char* read_line() {
-    size_t len = 0;
+    ssize_t len;
     do {
-      if (getline(&line_, &len, f_) < 0) {
+      len = getline(&line_, &line_len_, f_);
+      if (len < 0) {
         if (errno == EAGAIN || errno == EINTR) continue;
         CHECK_ERRNO(false);
       }
@@ -93,7 +94,6 @@ class FileLineReader final {
   ~FileLineReader() {
     if (line_) {
       std::free(line_);
-      line_ = nullptr;
     }
   }
 
@@ -103,6 +103,7 @@ class FileLineReader final {
 
   FILE* const f_ = stdin;
   char* line_ = nullptr;
+  size_t line_len_ = 0;
   bool done_ = false;
 };
 
