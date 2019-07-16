@@ -12,6 +12,7 @@ if (( $ret != 0 )); then
   tmux new-window './run_forever.sh ./scrape_ws_bittrex'
   tmux new-window './run_forever.sh ./scrape_ws_binance'
   tmux new-window './run_forever.sh ./scrape_ws_huobi'
+  tmux new-window './run_forever.sh ./scrape_ws_bitmex'
   tmux -2 attach-session -d -t "$session_name"
 fi
 tmux source .tmux.conf

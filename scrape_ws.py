@@ -147,13 +147,14 @@ class CoinbaseStreamConfig(StreamConfig):
 class BitmexStreamConfig(StreamConfig):
 
   def __init__(self):
-    super().__init__('bitmex', 'wss://www.bitmex.com/realtime')
+    markets = ('XBTUSD', 'XBTU19', 'XBTZ19')
 
-  def on_open(self):
-    markets = ('XBTUSD',)
-    subscriptions = ['subscribe:{}'.format(market) for market in markets]
-    for subscription in subscription:
-      raise NotImplementedError()
+    subscription_string = ','.join(
+        'orderBookL2:{0},trade:{0}'.format(market) for market in markets)
+    connection_url = 'wss://www.bitmex.com/realtime?subscribe=instrument,{}'.format(
+        subscription_string)
+
+    super().__init__('bitmex', connection_url)
 
 
 class HuobiStreamConfig(StreamConfig):

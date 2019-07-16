@@ -1,6 +1,6 @@
 #!/bin/bash
 python_version="$(python3 -V 2>&1)"
-required_python_version='Python (3.6.(4|5)|3.7.0rc1)'
+required_python_version='Python (3.7.\d+)'
 
 if ! (echo $python_version | egrep "$required_python_version" >/dev/null); then
   echo "Incorrect python version: You have $python_version, you need $required_python_version"
